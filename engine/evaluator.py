@@ -120,6 +120,30 @@ def _run_check(check: dict, field_name: str, field_value: Any) -> dict:
                 check["flag_field"], check["mfa_field"]
             )
 
+        elif check_type == "equals":
+            return _equals(field_name, field_value, check["value"])
+
+        elif check_type == "not_equals":
+            return _not_equals(field_name, field_value, check["value"])
+
+        elif check_type == "list_is_empty":
+            return _list_is_empty(field_name, field_value)
+
+        elif check_type == "field_not_empty":
+            return _field_not_empty(field_name, field_value)
+
+        elif check_type == "version_gte":
+            return _version_gte(field_name, field_value, check["value"])
+
+        elif check_type == "has_inbound_acl_on_wan":
+            return _has_inbound_acl_on_wan(field_name, field_value)
+
+        elif check_type == "snmp_not_default":
+            return _snmp_not_default(field_name, field_value)
+
+        elif check_type == "ntp_authenticated":
+            return _ntp_authenticated(field_name, field_value)
+
         else:
             return _finding(check_type, False,
                             f"Unknown check type '{check_type}' — not implemented.")
@@ -336,6 +360,171 @@ def _all_active_have_mfa(
         else "All active accounts have MFA enabled [OK]"
     )
     return _finding("all_active_have_mfa", passed, detail)
+
+
+# ── Firewall / general check implementations ─────────────────────────────────
+
+def _equals(field: str, value: Any, expected: Any) -> dict:
+    """
+    Simple boolean or string equality check.
+    Used for: telnet_enabled=false, deny_all_default=true, etc.
+    """
+    passed = value == expected
+    detail = (
+        f"'{field}' is {value!r} but must be {expected!r}"
+        if not passed
+        else f"'{field}' is {value!r} [OK]"
+    )
+    return _finding(f"equals:{field}:{expected}", passed, detail)
+
+
+def _not_equals(field: str, value: Any, forbidden: Any) -> dict:
+    """
+    Value must NOT equal the forbidden value.
+    Used for: management_protocol must not be 'Telnet'.
+    """
+    passed = value != forbidden
+    detail = (
+        f"'{field}' is {value!r} — this value is not permitted"
+        if not passed
+        else f"'{field}' is {value!r} (not {forbidden!r}) [OK]"
+    )
+    return _finding(f"not_equals:{field}:{forbidden}", passed, detail)
+
+
+def _list_is_empty(field: str, value: Any) -> dict:
+    """
+    The field must be an empty list.
+    Used for: forbidden_ports_open must be [] meaning no insecure ports are open.
+    """
+    if not isinstance(value, list):
+        return _finding(f"list_is_empty:{field}", False,
+                        f"'{field}' is not a list — got {type(value).__name__}.")
+    passed = len(value) == 0
+    detail = (
+        f"'{field}' contains forbidden entries: {value}"
+        if not passed
+        else f"'{field}' is empty — no forbidden entries present [OK]"
+    )
+    return _finding(f"list_is_empty:{field}", passed, detail)
+
+
+def _field_not_empty(field: str, value: Any) -> dict:
+    """
+    The field must exist and not be an empty string or None.
+    Used for: config_change_ticket must reference a real ticket ID.
+    """
+    passed = value is not None and str(value).strip() != ""
+    detail = (
+        f"'{field}' is empty or missing — a value is required"
+        if not passed
+        else f"'{field}' is set to {value!r} [OK]"
+    )
+    return _finding(f"field_not_empty:{field}", passed, detail)
+
+
+def _version_gte(field: str, value: Any, minimum: str) -> dict:
+    """
+    Semantic version comparison: value must be >= minimum.
+    Parses versions like '17.3.4a' by extracting leading digits from each part.
+    Used for: firmware_version must meet minimum required version.
+    """
+    import re
+    if value is None:
+        return _finding(f"version_gte:{field}", False, f"'{field}' is missing.")
+
+    def _parse(v: str):
+        parts = re.split(r"[.\-]", str(v))
+        result = []
+        for p in parts:
+            m = re.match(r"(\d+)", p)
+            result.append(int(m.group(1)) if m else 0)
+        return tuple(result)
+
+    try:
+        passed = _parse(str(value)) >= _parse(minimum)
+    except Exception:
+        return _finding(f"version_gte:{field}", False,
+                        f"Could not parse version '{value}'.")
+
+    detail = (
+        f"'{field}' is {value} — must be >= {minimum}"
+        if not passed
+        else f"'{field}' is {value} (>= {minimum}) [OK]"
+    )
+    return _finding(f"version_gte:{field}:{minimum}", passed, detail)
+
+
+def _has_inbound_acl_on_wan(field: str, acls: Any) -> dict:
+    """
+    SC-7: At least one ACL must be applied inbound on a WAN-facing interface.
+    Looks for any ACL entry with direction='inbound' and 'WAN' in the interface name.
+    """
+    if not isinstance(acls, list):
+        return _finding("has_inbound_acl_on_wan", False,
+                        f"'{field}' is not a list.")
+
+    wan_acls = [
+        acl.get("acl_id", "?")
+        for acl in acls
+        if acl.get("direction", "").lower() == "inbound"
+        and "wan" in acl.get("interface", "").lower()
+    ]
+
+    passed = len(wan_acls) > 0
+    detail = (
+        "No inbound ACL found on a WAN-facing interface"
+        if not passed
+        else f"Inbound WAN ACL(s) found: {wan_acls} [OK]"
+    )
+    return _finding("has_inbound_acl_on_wan", passed, detail)
+
+
+def _snmp_not_default(field: str, snmp: Any) -> dict:
+    """
+    CM-6: SNMP must not use v2c with the default community string 'public'.
+    SNMPv2c with 'public' is a well-known misconfiguration that exposes device info.
+    """
+    if not isinstance(snmp, dict):
+        return _finding("snmp_not_default", False,
+                        f"'{field}' is not a dict.")
+
+    version   = snmp.get("version", "").lower()
+    community = snmp.get("community_string", "").lower()
+
+    # Fail if SNMP is enabled AND using v2c AND community is the default 'public'
+    is_default = (
+        snmp.get("enabled", False)
+        and version == "v2c"
+        and community == "public"
+    )
+
+    passed = not is_default
+    detail = (
+        f"SNMP is using v2c with default community string '{snmp.get('community_string')}' — must be changed"
+        if not passed
+        else f"SNMP configuration does not use default credentials [OK]"
+    )
+    return _finding("snmp_not_default", passed, detail)
+
+
+def _ntp_authenticated(field: str, ntp: Any) -> dict:
+    """
+    CM-6: NTP must use authentication to prevent time-source spoofing.
+    Unauthenticated NTP allows an attacker to manipulate system time,
+    which breaks log integrity and certificate validation.
+    """
+    if not isinstance(ntp, dict):
+        return _finding("ntp_authenticated", False,
+                        f"'{field}' is not a dict.")
+
+    passed = ntp.get("authenticated", False) is True
+    detail = (
+        "NTP is not using authentication — time-source spoofing is possible"
+        if not passed
+        else "NTP authentication is enabled [OK]"
+    )
+    return _finding("ntp_authenticated", passed, detail)
 
 
 # ── Rollup ────────────────────────────────────────────────────────────────────

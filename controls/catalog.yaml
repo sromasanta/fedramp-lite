@@ -105,3 +105,136 @@ controls:
             flag_field: active
             mfa_field: mfa_enabled
             description: "All active accounts must have MFA enabled"
+
+  # ================================================================
+  # SC - System and Communications Protection (Firewall)
+  # ================================================================
+
+  - id: SC-5
+    name: Denial of Service Protection
+    family: System and Communications Protection
+    description: >
+      The system protects against denial-of-service attacks. A default
+      deny-all rule must be in place on inbound interfaces and insecure
+      ports such as Telnet (23), FTP (21), and TFTP (69) must be blocked.
+    evidence_file: firewall.json
+    rules:
+      - field: deny_all_default
+        checks:
+          - type: equals
+            value: true
+            description: "Default deny-all rule must be enabled"
+      - field: forbidden_ports_open
+        checks:
+          - type: list_is_empty
+            description: "Insecure ports (Telnet/FTP/TFTP) must not be open"
+
+  - id: SC-7
+    name: Boundary Protection
+    family: System and Communications Protection
+    description: >
+      The system monitors and controls communications at external boundaries.
+      Telnet must be disabled, HTTP server must be disabled in favour of HTTPS,
+      and inbound ACLs must be applied on the WAN interface.
+    evidence_file: firewall.json
+    rules:
+      - field: telnet_enabled
+        checks:
+          - type: equals
+            value: false
+            description: "Telnet must be disabled on the device"
+      - field: http_server_enabled
+        checks:
+          - type: equals
+            value: false
+            description: "Plaintext HTTP server must be disabled"
+      - field: https_server_enabled
+        checks:
+          - type: equals
+            value: true
+            description: "HTTPS server must be enabled"
+      - field: access_control_lists
+        checks:
+          - type: has_inbound_acl_on_wan
+            description: "At least one inbound ACL must be applied on the WAN interface"
+
+  - id: SC-8
+    name: Transmission Confidentiality
+    family: System and Communications Protection
+    description: >
+      Remote management sessions must use encrypted protocols only.
+      SSH must be enabled and the management protocol must not be Telnet.
+    evidence_file: firewall.json
+    rules:
+      - field: ssh_enabled
+        checks:
+          - type: equals
+            value: true
+            description: "SSH must be enabled for encrypted management access"
+      - field: management_protocol
+        checks:
+          - type: not_equals
+            value: "Telnet"
+            description: "Management protocol must not be Telnet"
+      - field: remote_management_encrypted
+        checks:
+          - type: equals
+            value: true
+            description: "Remote management must be encrypted"
+
+  # ================================================================
+  # CM - Configuration Management (Firewall)
+  # ================================================================
+
+  - id: CM-2
+    name: Baseline Configuration
+    family: Configuration Management
+    description: >
+      The organization maintains a documented baseline configuration.
+      A baseline must exist, config backups must be enabled, and all
+      configuration changes must be tracked with a change ticket.
+    evidence_file: firewall.json
+    rules:
+      - field: baseline_config_documented
+        checks:
+          - type: equals
+            value: true
+            description: "A documented baseline configuration must exist"
+      - field: config_backup_enabled
+        checks:
+          - type: equals
+            value: true
+            description: "Automated configuration backups must be enabled"
+      - field: config_change_ticket
+        checks:
+          - type: field_not_empty
+            description: "Last config change must reference a change ticket"
+
+  - id: CM-6
+    name: Configuration Settings
+    family: Configuration Management
+    description: >
+      The organization establishes and documents configuration settings.
+      Default credentials must be changed, SNMP must not use v2c with
+      default community strings, NTP must be authenticated, and firmware
+      must meet the minimum required version.
+    evidence_file: firewall.json
+    rules:
+      - field: default_credentials_changed
+        checks:
+          - type: equals
+            value: true
+            description: "Default device credentials must be changed"
+      - field: snmp
+        checks:
+          - type: snmp_not_default
+            description: "SNMP must not use v2c with default community string 'public'"
+      - field: ntp
+        checks:
+          - type: ntp_authenticated
+            description: "NTP must use authentication"
+      - field: firmware_version
+        checks:
+          - type: version_gte
+            value: "17.3.2"
+            description: "Firmware must meet minimum required version 17.3.2"

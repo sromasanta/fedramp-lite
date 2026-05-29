@@ -90,11 +90,6 @@ def evaluate():
     except json.JSONDecodeError as exc:
         return jsonify({"error": f"Invalid JSON: {exc}"}), 400
 
-    # ── Build evidence map keyed by filename stem ─────────────────────────────
-    # e.g.  "users.json" -> key "users"
-    evidence_key = os.path.splitext(evidence_name)[0]
-    evidence_map = {evidence_key: evidence_data}
-
     # ── Filter catalog to selected families ───────────────────────────────────
     catalog  = get_catalog()
     filtered = [
@@ -104,6 +99,21 @@ def evaluate():
 
     if not filtered:
         return jsonify({"error": "No controls matched the selected families."}), 400
+
+    # ── Build evidence map ────────────────────────────────────────────────────
+    # Strategy: try the user-supplied filename stem first (e.g. "firewall.json"
+    # -> "firewall"). If that won't match any control in the filtered set, also
+    # register the evidence under every evidence_file stem the selected controls
+    # actually expect. This means the user can type any filename — or leave it
+    # blank — and the engine will still find the evidence.
+    evidence_key  = os.path.splitext(evidence_name)[0]  # what the user typed
+    evidence_map  = {evidence_key: evidence_data}
+
+    # Register under every stem the selected controls expect
+    for ctrl in filtered:
+        stem = os.path.splitext(ctrl.get("evidence_file", ""))[0]
+        if stem and stem not in evidence_map:
+            evidence_map[stem] = evidence_data
 
     # ── Run the engine ────────────────────────────────────────────────────────
     results = [evaluate_control(ctrl, evidence_map) for ctrl in filtered]
