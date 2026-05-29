@@ -1,6 +1,6 @@
 {
   "report_title": "FedRAMP-Lite Compliance Report",
-  "generated_at": "2026-05-29T15:09:26.480479+00:00",
+  "generated_at": "2026-05-29T15:54:14.154929+00:00",
   "overall_status": "non-compliant",
   "summary": {
     "compliant": 2,
@@ -17,7 +17,7 @@
         {
           "check": "no_inactive_over_days",
           "passed": false,
-          "detail": "Stale inactive accounts (>90 days): ['charlie']"
+          "detail": "Accounts with no login in >90 days: ['charlie (130d)'] | Disabled accounts still present in system: ['charlie']"
         },
         {
           "check": "all_have_field:role",

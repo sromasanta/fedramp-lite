@@ -74,6 +74,7 @@ def main():
     report_path = save_report(report, args.output)
     print(f"\n[*] Report saved     : {report_path}")
 
+    
     #print_report(report)
 
 

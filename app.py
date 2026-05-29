@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from engine.loader    import load_catalog, load_all_evidence
 from engine.evaluator import evaluate_control
-from engine.reporter  import build_report, save_report
+from engine.reporter  import build_report  # uncomment for save_report imported when needed **************
 
 app = Flask(__name__)
 
@@ -109,8 +109,7 @@ def evaluate():
     results = [evaluate_control(ctrl, evidence_map) for ctrl in filtered]
     report  = build_report(results)
 
-    # Save a copy to reports/ for the audit trail
-    save_report(report, REPORTS_DIR)
+    # save_report(report, REPORTS_DIR)  # uncomment to persist reports to disk ********************
 
     return jsonify(report)
 

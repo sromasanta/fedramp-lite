@@ -1,7 +1,7 @@
 {"_description":"System user account inventory — evidence for AC control family","_source":"mock export from identity management system","accounts":[
-    {"username":"alice","role":"admin","active":true,"mfa_enabled":true,"last_login_days_ago":5,"password_age_days":45,"privileged":true,"access_reviewed":true},
+    {"username":"alice","role":"admin","active":true,"mfa_enabled":true,"last_login_days_ago":500,"password_age_days":45,"privileged":true,"access_reviewed":true},
     {"username":"bob","role":"operator","active":true,"mfa_enabled":true,"last_login_days_ago":20,"password_age_days":80,"privileged":false,"access_reviewed":true},
-    {"username":"charlie","role":"viewer","active":false,"mfa_enabled":false,"last_login_days_ago":130,"password_age_days":200,"privileged":false,"access_reviewed":false},
+    {"username":"charlie","role":"viewer","active":false,"mfa_enabled":false,"last_login_days_ago":10,"password_age_days":200,"privileged":false,"access_reviewed":false},
     {"username":"diana","role":"admin","active":true,"mfa_enabled":false,"last_login_days_ago":3,"password_age_days":55,"privileged":true,"access_reviewed":true},
     {"username":"eve","role":"operator","active":true,"mfa_enabled":true,"last_login_days_ago":10,"password_age_days":110,"privileged":false,"access_reviewed":false}]}
     

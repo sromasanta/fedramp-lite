@@ -11,7 +11,7 @@ For each control it:
 
 Check types implemented (all user-account focused)
 ───────────────────────────────────────────────────
-no_inactive_over_days     Accounts inactive longer than N days must not exist
+no_inactive_over_days     ANY account with last_login > N days is stale; disabled accounts still present are flagged
 all_have_field            Every account object must contain a named field
 privileged_accounts_reviewed  All privileged=true accounts must have access_reviewed=true
 not_all_privileged        At least one account must be non-privileged (separation of duties)
@@ -135,24 +135,41 @@ def _no_inactive_over_days(
     max_days: int, status_field: str, flag_field: str
 ) -> dict:
     """
-    AC-2: Flag any account where active=False AND last_login_days_ago > max_days.
-    These are stale accounts that should have been disabled/removed.
+    AC-2: Two separate sub-checks rolled into one finding:
+      1. ANY account (active or not) with last_login_days_ago > max_days is stale.
+         A real user logging in resets this. 500 days with active=True is still a gap.
+      2. Accounts marked active=False are disabled — they should have near-zero
+         last_login_days_ago OR be removed entirely.
+    Both types of violations are reported together.
     """
     if not isinstance(accounts, list):
         return _finding("no_inactive_over_days", False, f"'{field}' is not a list.")
 
-    violators = [
+    # Check 1: any account whose last login exceeds the threshold
+    stale_login = [
+        f"{acct.get('username','?')} ({acct.get(status_field, '?')}d)"
+        for acct in accounts
+        if acct.get(status_field, 0) > max_days
+    ]
+
+    # Check 2: accounts flagged inactive but still present in the system
+    still_present_inactive = [
         acct.get("username", "?")
         for acct in accounts
         if not acct.get(flag_field, True)
-        and acct.get(status_field, 0) > max_days
     ]
 
-    passed = len(violators) == 0
+    violations = []
+    if stale_login:
+        violations.append(f"Accounts with no login in >{max_days} days: {stale_login}")
+    if still_present_inactive:
+        violations.append(f"Disabled accounts still present in system: {still_present_inactive}")
+
+    passed = len(violations) == 0
     detail = (
-        f"Stale inactive accounts (>{max_days} days): {violators}"
+        " | ".join(violations)
         if not passed
-        else f"No accounts have been inactive for more than {max_days} days [OK]"
+        else f"All accounts have logged in within {max_days} days and no disabled accounts exist [OK]"
     )
     return _finding("no_inactive_over_days", passed, detail)
 

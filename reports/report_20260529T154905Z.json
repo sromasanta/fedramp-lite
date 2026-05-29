@@ -1,0 +1,27 @@
+{
+  "report_title": "FedRAMP-Lite Compliance Report",
+  "generated_at": "2026-05-29T15:49:05.586320+00:00",
+  "overall_status": "non-compliant",
+  "summary": {
+    "compliant": 0,
+    "partially-compliant": 0,
+    "non-compliant": 1
+  },
+  "controls": [
+    {
+      "control_id": "IA-2",
+      "control_name": "Identification and Authentication - MFA",
+      "family": "Identification and Authentication",
+      "status": "non-compliant",
+      "findings": [
+        {
+          "check": "all_active_have_mfa",
+          "passed": false,
+          "detail": "Active accounts without MFA enabled: ['diana']"
+        }
+      ],
+      "evidence_used": "users.json",
+      "error": null
+    }
+  ]
+}
