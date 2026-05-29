@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FedRAMP-Lite — Architecture Diagram</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      padding: 40px 32px;
+    }
+
+    h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #58a6ff;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 0.8rem;
+      color: #8b949e;
+      margin-bottom: 40px;
+    }
+
+    /* ── Top nav link ── */
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .nav a {
+      color: #58a6ff;
+      font-size: 0.8rem;
+      text-decoration: none;
+      border: 1px solid #30363d;
+      padding: 4px 12px;
+      border-radius: 6px;
+      transition: border-color 0.15s;
+    }
+    .nav a:hover { border-color: #58a6ff; }
+
+    /* ── Diagram canvas ── */
+    .diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* ── Row ── */
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      position: relative;
+    }
+
+    /* ── Box styles ── */
+    .box {
+      border-radius: 10px;
+      padding: 16px 20px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .box .box-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+    }
+    .box .box-items {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .box .item {
+      background: #0d111799;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+    }
+    .box .item .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Box colour themes */
+    .box-blue  { background: #1f6feb18; border: 1px solid #1f6feb55; }
+    .box-blue  .box-title { color: #58a6ff; }
+    .box-blue  .item { border-color: #1f6feb33; color: #c9d1d9; }
+    .box-blue  .dot  { background: #58a6ff; }
+
+    .box-green { background: #23863618; border: 1px solid #2ea04355; }
+    .box-green .box-title { color: #3fb950; }
+    .box-green .item { border-color: #2ea04333; color: #c9d1d9; }
+    .box-green .dot  { background: #3fb950; }
+
+    .box-purple { background: #8957e518; border: 1px solid #8957e555; }
+    .box-purple .box-title { color: #bc8cff; }
+    .box-purple .item { border-color: #8957e533; color: #c9d1d9; }
+    .box-purple .dot  { background: #bc8cff; }
+
+    .box-orange { background: #d2992218; border: 1px solid #d2992255; }
+    .box-orange .box-title { color: #e3b341; }
+    .box-orange .item { border-color: #d2992233; color: #c9d1d9; }
+    .box-orange .dot  { background: #e3b341; }
+
+    .box-red    { background: #da363318; border: 1px solid #da363355; }
+    .box-red    .box-title { color: #f85149; }
+    .box-red    .item { border-color: #da363333; color: #c9d1d9; }
+    .box-red    .dot  { background: #f85149; }
+
+    .box-gray   { background: #21262d; border: 1px solid #30363d; }
+    .box-gray   .box-title { color: #8b949e; }
+    .box-gray   .item { border-color: #30363d; color: #c9d1d9; }
+    .box-gray   .dot  { background: #8b949e; }
+
+    /* ── Arrows ── */
+    .arrow-h {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 0 8px;
+      flex-shrink: 0;
+    }
+    .arrow-h .arrow-line {
+      height: 2px;
+      width: 60px;
+      background: #30363d;
+      position: relative;
+    }
+    .arrow-h .arrow-line::after {
+      content: '';
+      position: absolute;
+      right: -1px; top: -4px;
+      border-left: 8px solid #30363d;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+    .arrow-h .arrow-label {
+      font-size: 0.6rem;
+      color: #484f58;
+      white-space: nowrap;
+    }
+
+    .arrow-v {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      padding: 4px 0;
+    }
+    .arrow-v .v-line {
+      width: 2px;
+      height: 36px;
+      background: #30363d;
+    }
+    .arrow-v .v-head {
+      width: 0; height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 8px solid #30363d;
+    }
+    .arrow-v .arrow-label {
+      font-size: 0.6rem;
+      color: #484f58;
+      margin-top: 3px;
+      white-space: nowrap;
+    }
+
+    /* ── Section labels ── */
+    .section-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #484f58;
+      text-align: center;
+      margin: 8px 0 4px;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1px dashed #21262d;
+      margin: 28px auto;
+      max-width: 1100px;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      max-width: 1100px;
+      margin: 32px auto 0;
+      padding: 16px 20px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+    }
+    .legend-title {
+      width: 100%;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #8b949e;
+      margin-bottom: 4px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: #c9d1d9;
+    }
+    .legend-swatch {
+      width: 12px; height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* ── File tag ── */
+    .file-tag {
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 0.68rem;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 1px 6px;
+      color: #79c0ff;
+      margin-left: 2px;
+    }
+
+    /* wide boxes */
+    .w-200 { min-width: 200px; }
+    .w-220 { min-width: 220px; }
+    .w-180 { min-width: 180px; }
+  </style>
+</head>
+<body>
+
+  <div class="nav">
+    <a href="/">&larr; Back to Engine</a>
+  </div>
+
+  <h1>FedRAMP-Lite &mdash; Architecture &amp; Data Flow</h1>
+  <p class="subtitle">How evidence moves through the compliance engine from input to report</p>
+
+  <div class="diagram">
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- ROW 1 — Inputs                                        -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="section-label">Inputs</div>
+    <div class="row">
+
+      <!-- User / Browser -->
+      <div class="box box-blue w-200">
+        <div class="box-title">Browser UI</div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div>Select control families</div>
+          <div class="item"><div class="dot"></div>Paste JSON evidence</div>
+          <div class="item"><div class="dot"></div>Set evidence filename</div>
+          <div class="item"><div class="dot"></div>Click &ldquo;Run Check&rdquo;</div>
+        </div>
+      </div>
+
+      <div class="arrow-h">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">POST /api/evaluate</div>
+      </div>
+
+      <!-- Flask app.py -->
+      <div class="box box-purple w-220">
+        <div class="box-title">Flask Server <span class="file-tag">app.py</span></div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div>Receives families + evidence JSON</div>
+          <div class="item"><div class="dot"></div>Validates JSON syntax</div>
+          <div class="item"><div class="dot"></div>Builds evidence_map (all stems)</div>
+          <div class="item"><div class="dot"></div>Filters catalog by family</div>
+          <div class="item"><div class="dot"></div>Calls evaluate_control() per ctrl</div>
+        </div>
+      </div>
+
+      <div class="arrow-h">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">GET /api/catalog</div>
+      </div>
+
+      <!-- Catalog -->
+      <div class="box box-orange w-200">
+        <div class="box-title">Control Catalog <span class="file-tag">catalog.yaml</span></div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div>AC &mdash; Access Control</div>
+          <div class="item"><div class="dot"></div>IA &mdash; Identification &amp; Auth</div>
+          <div class="item"><div class="dot"></div>SC &mdash; System &amp; Comms Protection</div>
+          <div class="item"><div class="dot"></div>CM &mdash; Configuration Mgmt</div>
+        </div>
+      </div>
+
+    </div><!-- /row1 -->
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- Arrow down from Flask                                 -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="row">
+      <div style="width:200px"></div>
+      <div style="width:76px"></div>
+      <div class="arrow-v">
+        <div class="v-line"></div>
+        <div class="v-head"></div>
+        <div class="arrow-label">evidence_map + controls</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- ROW 2 — Engine                                        -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="section-label">Engine</div>
+    <div class="row">
+
+      <!-- Loader -->
+      <div class="box box-gray w-180">
+        <div class="box-title">Loader <span class="file-tag">loader.py</span></div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div>Reads .json / .yaml / .csv</div>
+          <div class="item"><div class="dot"></div>Reads catalog.yaml</div>
+          <div class="item"><div class="dot"></div>Returns evidence_map dict</div>
+        </div>
+      </div>
+
+      <div class="arrow-h">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">dicts</div>
+      </div>
+
+      <!-- Evaluator -->
+      <div class="box box-purple w-220">
+        <div class="box-title">Evaluator <span class="file-tag">evaluator.py</span></div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div>Matches evidence to control</div>
+          <div class="item"><div class="dot"></div>Runs check functions per rule</div>
+          <div class="item"><div class="dot"></div>Returns pass / fail findings</div>
+          <div class="item"><div class="dot"></div>Rolls up control status</div>
+        </div>
+      </div>
+
+      <div class="arrow-h">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">findings[]</div>
+      </div>
+
+      <!-- Check types -->
+      <div class="box box-orange w-220">
+        <div class="box-title">Check Functions</div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div>equals / not_equals</div>
+          <div class="item"><div class="dot"></div>no_inactive_over_days</div>
+          <div class="item"><div class="dot"></div>all_active_have_mfa</div>
+          <div class="item"><div class="dot"></div>privileged_require_mfa</div>
+          <div class="item"><div class="dot"></div>snmp_not_default</div>
+          <div class="item"><div class="dot"></div>ntp_authenticated</div>
+          <div class="item"><div class="dot"></div>version_gte</div>
+          <div class="item"><div class="dot"></div>has_inbound_acl_on_wan</div>
+        </div>
+      </div>
+
+    </div><!-- /row2 -->
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- Arrow down from Evaluator                             -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="row">
+      <div style="width:180px"></div>
+      <div style="width:76px"></div>
+      <div class="arrow-v">
+        <div class="v-line"></div>
+        <div class="v-head"></div>
+        <div class="arrow-label">results[]</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- ROW 3 — Reporter                                      -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="section-label">Report Builder</div>
+    <div class="row">
+
+      <div class="box box-green w-220">
+        <div class="box-title">Reporter <span class="file-tag">reporter.py</span></div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div>Wraps results in report envelope</div>
+          <div class="item"><div class="dot"></div>Counts compliant / partial / fail</div>
+          <div class="item"><div class="dot"></div>Worst-case overall status rollup</div>
+          <div class="item"><div class="dot"></div>Adds generated_at timestamp</div>
+        </div>
+      </div>
+
+      <div class="arrow-h">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">report{}</div>
+      </div>
+
+      <!-- Rollup logic -->
+      <div class="box box-gray w-220">
+        <div class="box-title">Status Rollup Logic</div>
+        <div class="box-items">
+          <div class="item"><div class="dot" style="background:#3fb950"></div>All checks pass &rarr; compliant</div>
+          <div class="item"><div class="dot" style="background:#e3b341"></div>Some pass, some fail &rarr; partial</div>
+          <div class="item"><div class="dot" style="background:#f85149"></div>All fail &rarr; non-compliant</div>
+          <div class="item"><div class="dot" style="background:#f85149"></div>Any non-compliant &rarr; overall fail</div>
+        </div>
+      </div>
+
+    </div><!-- /row3 -->
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- Arrow down to output                                  -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="row">
+      <div class="arrow-v">
+        <div class="v-line"></div>
+        <div class="v-head"></div>
+        <div class="arrow-label">JSON response</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- ROW 4 — Outputs                                       -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="section-label">Outputs</div>
+    <div class="row" style="gap:24px; align-items:flex-start">
+
+      <!-- UI Report -->
+      <div class="box box-blue w-200">
+        <div class="box-title">UI Report Panel</div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div>Overall status pill</div>
+          <div class="item"><div class="dot"></div>Summary counts bar</div>
+          <div class="item"><div class="dot"></div>Per-control cards</div>
+          <div class="item"><div class="dot"></div>Expandable findings</div>
+          <div class="item"><div class="dot"></div>Pass / fail per check</div>
+        </div>
+      </div>
+
+      <!-- JSON report (optional) -->
+      <div class="box box-gray w-200">
+        <div class="box-title">JSON Report <span class="file-tag">reports/</span></div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div>report_title</div>
+          <div class="item"><div class="dot"></div>generated_at (UTC)</div>
+          <div class="item"><div class="dot"></div>overall_status</div>
+          <div class="item"><div class="dot"></div>summary counts</div>
+          <div class="item"><div class="dot"></div>controls[] with findings[]</div>
+          <div class="item" style="color:#484f58; font-style:italic;"><div class="dot" style="background:#484f58"></div>disabled &mdash; uncomment to enable</div>
+        </div>
+      </div>
+
+      <!-- Evidence files -->
+      <div class="box box-orange w-200">
+        <div class="box-title">Evidence Files</div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div><span class="file-tag">users.json</span> &mdash; AC, IA</div>
+          <div class="item"><div class="dot"></div><span class="file-tag">firewall.json</span> &mdash; SC, CM</div>
+          <div class="item"><div class="dot"></div>Any .yaml or .csv also accepted</div>
+        </div>
+      </div>
+
+    </div><!-- /row4 -->
+
+    <hr class="divider" />
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- Control Families Reference                            -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="section-label">Control Families &amp; Controls</div>
+    <div class="row" style="gap:16px; align-items:flex-start; flex-wrap:wrap; justify-content:center">
+
+      <div class="box box-red w-200">
+        <div class="box-title">AC &mdash; Access Control</div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div>AC-2 &mdash; Account Management</div>
+          <div class="item"><div class="dot"></div>AC-3 &mdash; Access Enforcement</div>
+          <div class="item"><div class="dot"></div>AC-5 &mdash; Separation of Duties</div>
+          <div class="item"><div class="dot"></div>AC-6 &mdash; Least Privilege</div>
+          <div class="item"><div class="dot"></div>AC-11 &mdash; Password Age</div>
+        </div>
+      </div>
+
+      <div class="box box-green w-200">
+        <div class="box-title">IA &mdash; Identification &amp; Auth</div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div>IA-2 &mdash; MFA</div>
+        </div>
+      </div>
+
+      <div class="box box-purple w-200">
+        <div class="box-title">SC &mdash; System &amp; Comms</div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div>SC-5 &mdash; DoS Protection</div>
+          <div class="item"><div class="dot"></div>SC-7 &mdash; Boundary Protection</div>
+          <div class="item"><div class="dot"></div>SC-8 &mdash; Transmission Confidentiality</div>
+        </div>
+      </div>
+
+      <div class="box box-orange w-200">
+        <div class="box-title">CM &mdash; Configuration Mgmt</div>
+        <div class="box-items">
+          <div class="item"><div class="dot"></div>CM-2 &mdash; Baseline Configuration</div>
+          <div class="item"><div class="dot"></div>CM-6 &mdash; Configuration Settings</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /diagram -->
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-title">Legend</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#1f6feb33;border:1px solid #1f6feb55"></div>Browser / UI layer</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#8957e533;border:1px solid #8957e555"></div>Flask server / Evaluator</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#d2992233;border:1px solid #d2992255"></div>Catalog / Evidence / Check functions</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#23863633;border:1px solid #2ea04355"></div>Reporter / Output</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#21262d;border:1px solid #30363d"></div>Supporting / optional components</div>
+    <div class="legend-item">
+      <div style="width:30px;height:2px;background:#30363d;position:relative">
+        <div style="position:absolute;right:-1px;top:-4px;border-left:8px solid #30363d;border-top:5px solid transparent;border-bottom:5px solid transparent"></div>
+      </div>
+      Data flow direction
+    </div>
+  </div>
+
+</body>
+</html>

@@ -33,6 +33,12 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/diagram")
+def diagram():
+    """Serve the architecture diagram page."""
+    return render_template("diagram.html")
+
+
 @app.route("/api/catalog")
 def catalog():
     """

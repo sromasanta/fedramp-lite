@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from engine.loader    import load_catalog, load_all_evidence
 from engine.evaluator import evaluate_control
-from engine.reporter  import build_report, save_report, print_report
+from engine.reporter  import build_report, save_report #, print_report  uncommment for print_report imported when needed --- IGNORE ---
 
 
 BASE_DIR         = os.path.dirname(__file__)
@@ -75,7 +75,7 @@ def main():
     print(f"\n[*] Report saved     : {report_path}")
 
     
-    #print_report(report)
+    #print_report(report) uncomment for print_report called when needed --- IGNORE ---
 
 
 if __name__ == "__main__":
