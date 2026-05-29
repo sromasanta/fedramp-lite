@@ -1,0 +1,107 @@
+# ================================================================
+# FedRAMP-Lite Mock Control Catalog — AC (Access Control) Family
+# Based on FedRAMP 20x control families (simplified for demo only)
+# NOT official FedRAMP documentation
+# ================================================================
+
+controls:
+
+  - id: AC-2
+    name: Account Management
+    family: Access Control
+    description: >
+      The organization manages system accounts including identifying account
+      types, establishing conditions for membership, and disabling accounts
+      that are no longer required. Inactive accounts must be disabled within
+      90 days and all accounts must have a defined role.
+    evidence_file: users.json
+    rules:
+      - field: accounts
+        checks:
+          - type: no_inactive_over_days
+            days: 90
+            status_field: last_login_days_ago
+            flag_field: active
+            description: "No inactive accounts beyond 90-day threshold"
+          - type: all_have_field
+            field: role
+            description: "All accounts must have an assigned role"
+
+  - id: AC-3
+    name: Access Enforcement
+    family: Access Control
+    description: >
+      The system enforces approved authorizations for logical access to
+      information and system resources. All accounts must have a defined
+      role and privileged accounts must have access reviews completed.
+    evidence_file: users.json
+    rules:
+      - field: accounts
+        checks:
+          - type: all_have_field
+            field: role
+            description: "All accounts must have a role assigned"
+          - type: privileged_accounts_reviewed
+            description: "All privileged accounts must have access_reviewed = true"
+
+  - id: AC-5
+    name: Separation of Duties
+    family: Access Control
+    description: >
+      The organization separates duties of individuals to reduce risk of
+      malevolent activity. Validates that not all accounts are admins —
+      at least one non-privileged account must exist.
+    evidence_file: users.json
+    rules:
+      - field: accounts
+        checks:
+          - type: not_all_privileged
+            description: "Not all accounts should be privileged/admin"
+
+  - id: AC-6
+    name: Least Privilege
+    family: Access Control
+    description: >
+      The organization employs the principle of least privilege. Privileged
+      accounts must have MFA enabled. No inactive accounts should retain
+      privileged access.
+    evidence_file: users.json
+    rules:
+      - field: accounts
+        checks:
+          - type: privileged_require_mfa
+            description: "All privileged accounts must have MFA enabled"
+          - type: no_inactive_privileged
+            flag_field: active
+            description: "No inactive accounts should have privileged access"
+
+  - id: AC-11
+    name: Session Lock - Password Age
+    family: Access Control
+    description: >
+      The organization enforces credential hygiene. Passwords must not
+      exceed 90 days of age for active accounts.
+    evidence_file: users.json
+    rules:
+      - field: accounts
+        checks:
+          - type: password_age_within_limit
+            max_days: 90
+            flag_field: active
+            description: "Active accounts must have passwords rotated within 90 days"
+
+  - id: IA-2
+    name: Identification and Authentication - MFA
+    family: Identification and Authentication
+    description: >
+      The information system uniquely identifies and authenticates users.
+      All active accounts must have multi-factor authentication enabled.
+      This is a core FedRAMP 20x requirement.
+    evidence_file: users.json
+    rules:
+      - field: accounts
+        checks:
+          - type: all_active_have_mfa
+            flag_field: active
+            mfa_field: mfa_enabled
+            description: "All active accounts must have MFA enabled"
